@@ -389,6 +389,10 @@ Every install and update runs the build step afresh, so the variable has to be s
 without it the pinned upstream release comes back. The stamp still records the pin from
 `plannotator-tui.version`, whichever release directory the binary came from.
 
+To try the Inbox review without touching the Herdr you work in, `scripts/try-isolated.sh` runs
+this checkout in a Herdr instance of its own; [docs/try-isolated.md](docs/try-isolated.md) walks
+through a trial.
+
 Before a release, `HERDR_SESSION=<disposable session> bash scripts/smoke.sh` installs fresh, upgrades
 from the first shipped commit, installs lite, swaps to full, and opens the manager and review panes,
 then restores whatever was installed.

@@ -1,0 +1,87 @@
+# Trying the Inbox review in an isolated Herdr
+
+`scripts/try-isolated.sh` runs this checkout's Full plugin in a Herdr instance of its own, so a
+trial never touches the Herdr you work in: not its server, plugin registry, config or plugin
+state, nor your Plannotator data.
+
+## What is isolated, and how
+
+Herdr 0.9.5 resolves everything from its config directory, `$XDG_CONFIG_HOME/herdr`, else
+`~/.config/herdr`: `config.toml`, the plugin registry `plugins.json` and managed plugins, the API
+and client sockets, session state and logs. Plugin state lives under `$XDG_STATE_HOME/herdr`,
+else `~/.local/state/herdr`. `HERDR_SOCKET_PATH`, `HERDR_SESSION` and `HERDR_CONFIG_PATH` point a
+command elsewhere. A named session has its own sockets but shares the registry and the config, so
+it does not isolate a plugin.
+
+Sources, at herdr `v0.9.5`: `src/config/io.rs` (`config_dir`, `state_dir`, `config_path`),
+`src/session.rs` (`data_dir_for`, `api_socket_path_for`), `src/persist/plugin_registry.rs`
+(`registry_path`), `src/plugin_paths.rs`, `src/cli/plugin.rs` (`plugin_link` writes the registry
+itself when no server answers); the documentation's `socket-api.mdx` (Socket paths) and
+`plugins.mdx` (Install and link).
+
+The script runs every Herdr command of the trial with `XDG_CONFIG_HOME` and `XDG_STATE_HOME`
+inside `TRIAL_DIR`, every `HERDR_*` and `PLANNOTATOR_*` variable removed, and
+`PLANNOTATOR_DATA_DIR` inside `TRIAL_DIR` too, so plannotator-tui's config, its device token, its
+feedback archive and the Inbox it looks for are the trial's. Before it links anything it checks
+that `herdr --help`, in that environment, names the trial's `config.toml`. Linking writes the
+trial's registry directly; no server runs until `start`.
+
+`HOME` is kept, so Claude Code keeps its login, settings and transcripts. Programs that read
+`XDG_CONFIG_HOME` (gh, mise, ...) do not find their usual config in the trial's panes.
+
+## Steps
+
+1. Build plannotator-tui with Inbox support: `cargo build --release` in a checkout of
+   `Flamintus/plannotator-tui` on `feat/inbox`.
+
+2. Prepare, from anywhere, Herdr included:
+
+   ```sh
+   PLANNOTATOR_TUI_BIN=<plannotator-tui>/target/release/plannotator-tui \
+     bash scripts/try-isolated.sh prepare
+   ```
+
+   This stages `bin/herdr-annotate.exe` (the pinned release, unless it is there already) and
+   `bin/plannotator-tui.exe` (that build) in this checkout, writes the trial's Herdr keys and its
+   plannotator-tui config (`[inbox] enabled = true`) when they are absent, and links this checkout
+   into the trial's registry. A Herdr install from GitHub keeps its own `bin/` and does not see
+   these binaries; a link of this same checkout in your everyday Herdr would.
+
+3. From a terminal outside Herdr: `bash scripts/try-isolated.sh start`. This attaches to the
+   trial instance and starts its server.
+
+4. In the trial, open a pane and start `claude` there. A session started inside the instance
+   reports its id through the Herdr integration you already have; do not run
+   `herdr integration install` in the trial, which writes Claude Code's own settings.
+
+5. What can be checked today, before Plannotator's device door serves terminals (contract E7):
+
+   - `prefix+shift+o` (`annotate.last`) opens the picker, then the reply. With no Inbox that
+     serves terminals, the footer says why, and `E` sends the review to the agent's pane once, as
+     with the setting off.
+   - `prefix+i` (`annotate.inbox`) stops with plannotator-tui's usage message: plannotator-tui
+     has no `herdr inbox` launcher yet.
+
+6. Once a Plannotator build serves terminals, start its Inbox on the trial's data directory, then
+   run `annotate.last` again:
+
+   ```sh
+   bash scripts/try-isolated.sh run -- <plannotator build> inbox --background
+   ```
+
+   The Inbox keeps one writer per data directory: if Claude Code's Plannotator plugin already
+   started one there, stop it first (`run -- <that plannotator> inbox stop`). Expected: the reply
+   is deposited in the session's review thread; comments are kept there; `E` sends now and `F`
+   finishes the round, with nothing pasted into the agent's pane; the agent's answers come back
+   under each passage; a new `annotate.last` on the same reply brings its comments back.
+
+7. Stop, then remove the directory:
+
+   ```sh
+   bash scripts/try-isolated.sh stop
+   rm -rf "${TRIAL_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/herdr-annotate-trial}"
+   ```
+
+`TRIAL_DIR` defaults to `${XDG_CACHE_HOME:-$HOME/.cache}/herdr-annotate-trial`. It has to be short
+enough for a Unix socket path, 107 bytes for `<TRIAL_DIR>/config/herdr/herdr-client.sock`; the
+script refuses a longer one.
