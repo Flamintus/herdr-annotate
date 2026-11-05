@@ -248,38 +248,6 @@ command = "annotate.gate"
 description = "review documents here, with Approve"
 ```
 
-#### Plannotator Inbox (experimental)
-
-plannotator-tui can review through the Plannotator Inbox, the local server that keeps threads
-between you and your agents. It is off unless plannotator-tui's own config turns it on
-(`[inbox] enabled = true` in `~/.config/plannotator-tui/config.toml`); off, nothing below changes.
-It needs a plannotator-tui with Inbox support, the
-[fork's `feat/inbox`](https://github.com/Flamintus/plannotator-tui/tree/feat/inbox#plannotator-inbox),
-installed with `PLANNOTATOR_TUI_BIN` or `PLANNOTATOR_TUI_RELEASE_BASE` (see Development): the
-pinned 0.9.9 rejects an `[inbox]` table, and every review then stops on its config.
-
-On, `annotate.last` goes through the Inbox with no change to this plugin: the reply you open is
-deposited in its session's review thread, your comments are kept on that thread, `E` sends them
-now and `F` finishes the round, and the agent's answers come back under each passage. Only a
-session the Inbox lists live, found by the id its host reported, goes there (for Claude Code, a
-session started after `herdr integration install claude`); any other, or an Inbox that does not
-serve terminals, keeps today's review sent to the agent's pane, and the footer says why. The keys
-are in plannotator-tui's Inbox section.
-
-`annotate.inbox` opens the focused agent's Inbox thread in plannotator-tui, to go on with the
-review kept there. It runs plannotator-tui's `herdr inbox` launcher, which no plannotator-tui
-build has yet: until one does, the action fails without a word on screen, and
-`herdr plugin log list --plugin annotate` shows plannotator-tui's usage message. It has no default
-key; `prefix+i` is free in Herdr's defaults:
-
-```toml
-[[keys.command]]
-key = "prefix+i"
-type = "plugin_action"
-command = "annotate.inbox"
-description = "open the agent's Inbox thread"
-```
-
 #### Ctrl-click Markdown links (opt-in)
 
 Annotate does not capture Ctrl-click on links by default, so `file://…md` links open the way

@@ -75,9 +75,6 @@ ACTION_COMMANDS = {
     "open": [PROGRAM, "herdr", "open"],
     "last": [PROGRAM, "herdr", "last"],
 }
-# The distributed manifests also open an Inbox thread, which the development manifest of the
-# pinned plannotator-tui source does not declare.
-DISTRIBUTED_ACTION_COMMANDS = {**ACTION_COMMANDS, "inbox": [PROGRAM, "herdr", "inbox"]}
 # Ctrl-click capture is opt-in (#69): only the links/ add-on may declare a link handler.
 LINKS_ID = "annotate-links"
 LINKS_PATTERN = "^file://.*\\.(md|markdown|mdx)$"
@@ -214,7 +211,7 @@ def check_distributed(path: Path, version_path: Path, native_version_path: Path)
     if pane.get("command") != DISTRIBUTED_PANE:
         fail(path, f"unexpected panes.doc argv: {pane.get('command')!r}")
 
-    for entry_id, expected in DISTRIBUTED_ACTION_COMMANDS.items():
+    for entry_id, expected in ACTION_COMMANDS.items():
         action = entry(path, manifest, "actions", entry_id)
         if platforms(path, manifest, action) != FULL_PLATFORMS:
             fail(path, f"actions.{entry_id} platforms are not macOS/Linux")
@@ -389,7 +386,7 @@ def check_windows_full(path: Path, root_path: Path) -> None:
         command = entry(path, manifest, "actions", identifier).get("command")
         if command != [WINDOWS_NATIVE_PROGRAM, identifier]:
             fail(path, f"actions.{identifier} must reuse the shared runtime: {command!r}")
-    for identifier, expected in DISTRIBUTED_ACTION_COMMANDS.items():
+    for identifier, expected in ACTION_COMMANDS.items():
         command = entry(path, manifest, "actions", identifier).get("command")
         if command != expected:
             fail(path, f"unexpected actions.{identifier} argv: {command!r}")
