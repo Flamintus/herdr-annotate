@@ -97,6 +97,9 @@ prepare() {
   if [ -n "${PLANNOTATOR_BIN:-}" ]; then
     ln -sf "$(cd "$(dirname "$PLANNOTATOR_BIN")" && pwd)/$(basename "$PLANNOTATOR_BIN")" "$dir/bin/plannotator"
     echo "  linked $dir/bin/plannotator to $PLANNOTATOR_BIN"
+  elif [ -e "$dir/bin/plannotator" ] || [ -L "$dir/bin/plannotator" ]; then
+    rm -f "$dir/bin/plannotator"
+    echo "  removed the plannotator an earlier prepare linked: the PATH's own is used"
   fi
 
   echo "== stage the binaries in $root/bin"
