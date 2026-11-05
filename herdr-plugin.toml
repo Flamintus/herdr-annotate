@@ -141,3 +141,13 @@ description = "Review the focused pane's recent terminal output in plannotator-t
 contexts = ["pane"]
 platforms = ["macos", "linux"]
 command = ["./bin/plannotator-tui.exe", "herdr", "terminal"]
+
+# No default key; bind one in Herdr's config (see the README). It runs plannotator-tui's
+# `herdr inbox` launcher, which needs the Inbox turned on in plannotator-tui's config.
+[[actions]]
+id = "inbox"
+title = "Annotate: agent's Inbox thread"
+description = "Open the focused agent's Plannotator Inbox thread in plannotator-tui, where its review goes on."
+contexts = ["pane"]
+platforms = ["macos", "linux"]
+command = ["./bin/plannotator-tui.exe", "herdr", "inbox"]
