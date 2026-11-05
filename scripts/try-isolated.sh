@@ -3,12 +3,15 @@
 # registry, config or plugin state with the Herdr you use every day. docs/try-isolated.md walks
 # through a trial.
 #
-#   PLANNOTATOR_TUI_BIN=<plannotator-tui build> bash scripts/try-isolated.sh prepare
+#   PLANNOTATOR_TUI_BIN=<plannotator-tui build> [PLANNOTATOR_BIN=<plannotator build>] \
+#     bash scripts/try-isolated.sh prepare
 #   bash scripts/try-isolated.sh start           # from a terminal outside Herdr
 #   bash scripts/try-isolated.sh run -- <command> [args...]
 #   bash scripts/try-isolated.sh stop
 #
 # TRIAL_DIR (default ${XDG_CACHE_HOME:-$HOME/.cache}/herdr-annotate-trial) holds the instance.
+# Its commands run with plannotator-tui's review loop on (PLANNOTATOR_TUI_REVIEW_LOOP=1), and
+# the plannotator build prepare was given, if any, first on the PATH.
 #
 # Herdr 0.9.5 keeps its config, plugin registry, API socket and session under
 # $XDG_CONFIG_HOME/herdr, and plugin state under $XDG_STATE_HOME/herdr, so those two move into
@@ -23,7 +26,7 @@ dir="${TRIAL_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/herdr-annotate-trial}"
 config="$dir/config/herdr"
 
 usage() {
-  sed -n '6,9p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '6,10p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 2
 }
 
@@ -47,6 +50,7 @@ trial() {
   env ${unset_args[@]+"${unset_args[@]}"} \
     XDG_CONFIG_HOME="$dir/config" XDG_STATE_HOME="$dir/state" \
     PLANNOTATOR_DATA_DIR="$dir/plannotator" PLANNOTATOR_UPDATE_CHECK=0 \
+    PLANNOTATOR_TUI_REVIEW_LOOP=1 PATH="$dir/bin:$PATH" \
     "$@"
 }
 
@@ -84,22 +88,22 @@ write_once() {
 
 prepare() {
   [ -n "${PLANNOTATOR_TUI_BIN:-}" ] || {
-    echo "try-isolated: set PLANNOTATOR_TUI_BIN to a plannotator-tui build with Inbox support" >&2
+    echo "try-isolated: set PLANNOTATOR_TUI_BIN to a plannotator-tui build with the review loop" >&2
     exit 2
   }
   absolute_dir create
   check_isolation
-  mkdir -p "$config" "$dir/config/plannotator-tui" "$dir/state" "$dir/plannotator"
+  mkdir -p "$config" "$dir/state" "$dir/plannotator" "$dir/bin"
+  if [ -n "${PLANNOTATOR_BIN:-}" ]; then
+    ln -sf "$(cd "$(dirname "$PLANNOTATOR_BIN")" && pwd)/$(basename "$PLANNOTATOR_BIN")" "$dir/bin/plannotator"
+    echo "  linked $dir/bin/plannotator to $PLANNOTATOR_BIN"
+  fi
 
   echo "== stage the binaries in $root/bin"
   bash "$root/scripts/fetch-herdr-annotate.sh"
   bash "$root/scripts/fetch-plannotator-tui.sh"
 
   echo "== config"
-  write_once "$dir/config/plannotator-tui/config.toml" <<'TOML'
-[inbox]
-enabled = true
-TOML
   # No onboarding: its integration setup writes the agents' own settings, which the trial
   # shares with your everyday Herdr through HOME. No update check, whose `herdr update` would
   # replace the binary both instances run.
@@ -138,12 +142,6 @@ key = "prefix+ctrl+o"
 type = "plugin_action"
 command = "annotate.last-newest"
 description = "review the agent's newest reply"
-
-[[keys.command]]
-key = "prefix+i"
-type = "plugin_action"
-command = "annotate.inbox"
-description = "open the agent's Inbox thread"
 TOML
 
   echo "== link $root into the trial's registry"

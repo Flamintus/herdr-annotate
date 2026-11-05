@@ -362,9 +362,9 @@ variable has to be set each time; without it the pinned upstream release comes b
 with no new commit builds nothing: reinstall to switch release directories. The stamp still
 records the pin from `plannotator-tui.version`, whichever release directory the binary came from.
 
-To try the Inbox review without touching the Herdr you work in, `scripts/try-isolated.sh` runs
-this checkout in a Herdr instance of its own; [docs/try-isolated.md](docs/try-isolated.md) walks
-through a trial.
+To try plannotator-tui's review loop without touching the Herdr you work in,
+`scripts/try-isolated.sh` runs this checkout in a Herdr instance of its own;
+[docs/try-isolated.md](docs/try-isolated.md) walks through a trial.
 
 Before a release, `HERDR_SESSION=<disposable session> bash scripts/smoke.sh` installs fresh, upgrades
 from the first shipped commit, installs lite, swaps to full, and opens the manager and review panes,
