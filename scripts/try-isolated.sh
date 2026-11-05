@@ -27,34 +27,46 @@ usage() {
   exit 2
 }
 
+# TRIAL_DIR made absolute: plannotator-tui ignores a relative XDG_CONFIG_HOME and falls back to
+# ~/.config, and a relative PLANNOTATOR_DATA_DIR would follow each process's own directory.
+absolute_dir() {
+  [ "${1:-}" != create ] || mkdir -p "$dir"
+  [ -d "$dir" ] || { echo "try-isolated: $dir is not prepared; run prepare first" >&2; exit 1; }
+  dir="$(cd "$dir" && pwd)"
+  config="$dir/config/herdr"
+}
+
+physical() { if [ -d "$1" ]; then (cd "$1" && pwd -P); else printf '%s' "$1"; fi; }
+
 # Run a command in the trial instance's environment.
 trial() {
   local name unset_args=()
   while IFS= read -r name; do
     case "$name" in HERDR_* | PLANNOTATOR_*) unset_args+=(-u "$name") ;; esac
   done < <(compgen -e)
-  env "${unset_args[@]}" \
+  env ${unset_args[@]+"${unset_args[@]}"} \
     XDG_CONFIG_HOME="$dir/config" XDG_STATE_HOME="$dir/state" \
     PLANNOTATOR_DATA_DIR="$dir/plannotator" PLANNOTATOR_UPDATE_CHECK=0 \
     "$@"
 }
 
-# The trial's config home must not be yours, and Herdr itself must name the trial's config
-# file, or nothing below is isolated.
+# The trial's config and state homes must not be yours, and Herdr itself must name the trial's
+# config file, or nothing below is isolated.
 check_isolation() {
-  local named own
-  [ -d "$dir/config" ] || { echo "try-isolated: $dir is not prepared; run prepare first" >&2; exit 1; }
-  own="${XDG_CONFIG_HOME:-$HOME/.config}"
-  if [ -d "$own" ] && [ "$(cd "$dir/config" && pwd -P)" = "$(cd "$own" && pwd -P)" ]; then
-    echo "try-isolated: $dir/config is your own config home; choose another TRIAL_DIR" >&2
+  local named here
+  here="$(physical "$dir")"
+  if [ "$here/config" = "$(physical "${XDG_CONFIG_HOME:-$HOME/.config}")" ] ||
+    [ "$here/state" = "$(physical "${XDG_STATE_HOME:-$HOME/.local/state}")" ]; then
+    echo "try-isolated: $dir holds your own config or state home; choose another TRIAL_DIR" >&2
     exit 1
   fi
-  # A Unix socket path holds at most 107 bytes, and Herdr puts its sockets in the config dir.
-  if [ "$(printf '%s' "$config/herdr-client.sock" | wc -c)" -gt 107 ]; then
+  # Herdr puts its sockets in the config dir, and a Unix socket path holds at most 103 bytes
+  # on macOS, 107 on Linux.
+  if [ "$(printf '%s' "$config/herdr-client.sock" | wc -c)" -gt 103 ]; then
     echo "try-isolated: $config is too long for Herdr's socket path; choose a shorter TRIAL_DIR" >&2
     exit 1
   fi
-  named="$(trial herdr --help 2>/dev/null | sed -n 's/^Config: *//p')"
+  named="$(trial herdr --help | sed -n 's/^Config: *//p')"
   if [ "$named" != "$config/config.toml" ]; then
     echo "try-isolated: herdr names config '$named', not '$config/config.toml'; stopping" >&2
     exit 1
@@ -75,8 +87,9 @@ prepare() {
     echo "try-isolated: set PLANNOTATOR_TUI_BIN to a plannotator-tui build with Inbox support" >&2
     exit 2
   }
-  mkdir -p "$config" "$dir/config/plannotator-tui" "$dir/state" "$dir/plannotator"
+  absolute_dir create
   check_isolation
+  mkdir -p "$config" "$dir/config/plannotator-tui" "$dir/state" "$dir/plannotator"
 
   echo "== stage the binaries in $root/bin"
   bash "$root/scripts/fetch-herdr-annotate.sh"
@@ -87,7 +100,15 @@ prepare() {
 [inbox]
 enabled = true
 TOML
+  # No onboarding: its integration setup writes the agents' own settings, which the trial
+  # shares with your everyday Herdr through HOME. No update check, whose `herdr update` would
+  # replace the binary both instances run.
   write_once "$config/config.toml" <<'TOML'
+onboarding = false
+
+[update]
+version_check = false
+
 [[keys.command]]
 key = "prefix+a"
 type = "plugin_action"
@@ -139,6 +160,7 @@ case "$command" in
       echo "try-isolated: run start from a terminal outside Herdr, which would keep the prefix key" >&2
       exit 2
     fi
+    absolute_dir create
     [ -f "$config/plugins.json" ] || prepare
     check_isolation
     trial herdr
@@ -146,10 +168,12 @@ case "$command" in
   run)
     [ "${1:-}" = -- ] && shift
     [ $# -gt 0 ] || usage
+    absolute_dir
     check_isolation
     trial "$@"
     ;;
   stop)
+    absolute_dir
     check_isolation
     trial herdr server stop
     ;;

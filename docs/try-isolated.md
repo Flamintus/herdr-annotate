@@ -23,8 +23,11 @@ The script runs every Herdr command of the trial with `XDG_CONFIG_HOME` and `XDG
 inside `TRIAL_DIR`, every `HERDR_*` and `PLANNOTATOR_*` variable removed, and
 `PLANNOTATOR_DATA_DIR` inside `TRIAL_DIR` too, so plannotator-tui's config, its device token, its
 feedback archive and the Inbox it looks for are the trial's. Before it links anything it checks
-that `herdr --help`, in that environment, names the trial's `config.toml`. Linking writes the
-trial's registry directly; no server runs until `start`.
+that the trial's config and state homes are not yours and that `herdr --help`, in that
+environment, names the trial's `config.toml`. Linking writes the trial's registry directly; no
+server runs until `start`. The trial's Herdr config turns off onboarding, whose integration setup
+would write the agents' own settings, and the update check, whose `herdr update` would replace
+the Herdr binary your everyday instance runs too.
 
 `HOME` is kept, so Claude Code keeps its login, settings and transcripts. Programs that read
 `XDG_CONFIG_HOME` (gh, mise, ...) do not find their usual config in the trial's panes.
@@ -51,16 +54,19 @@ trial's registry directly; no server runs until `start`.
    trial instance and starts its server.
 
 4. In the trial, open a pane and start `claude` there. A session started inside the instance
-   reports its id through the Herdr integration you already have; do not run
-   `herdr integration install` in the trial, which writes Claude Code's own settings.
+   reports its id through the Herdr integration you already have. Install no integration from
+   the trial, by `herdr integration install` or a setup screen: that writes Claude Code's own
+   settings, which both instances share.
 
 5. What can be checked today, before Plannotator's device door serves terminals (contract E7):
 
    - `prefix+shift+o` (`annotate.last`) opens the picker, then the reply. With no Inbox that
      serves terminals, the footer says why, and `E` sends the review to the agent's pane once, as
      with the setting off.
-   - `prefix+i` (`annotate.inbox`) stops with plannotator-tui's usage message: plannotator-tui
-     has no `herdr inbox` launcher yet.
+   - `prefix+i` (`annotate.inbox`) fails without a word on screen: plannotator-tui has no
+     `herdr inbox` launcher yet, and
+     `bash scripts/try-isolated.sh run -- herdr plugin log list --plugin annotate` shows its
+     usage message.
 
 6. Once a Plannotator build serves terminals, start its Inbox on the trial's data directory, then
    run `annotate.last` again:
@@ -75,13 +81,16 @@ trial's registry directly; no server runs until `start`.
    finishes the round, with nothing pasted into the agent's pane; the agent's answers come back
    under each passage; a new `annotate.last` on the same reply brings its comments back.
 
-7. Stop, then remove the directory:
+7. Stop, remove the directory, and drop the build staged in `bin/`, which carries the pinned
+   version's stamp and would otherwise stay there instead of the pinned release:
 
    ```sh
    bash scripts/try-isolated.sh stop
    rm -rf "${TRIAL_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/herdr-annotate-trial}"
+   rm -f bin/plannotator-tui.exe bin/plannotator-tui.version
    ```
 
-`TRIAL_DIR` defaults to `${XDG_CACHE_HOME:-$HOME/.cache}/herdr-annotate-trial`. It has to be short
-enough for a Unix socket path, 107 bytes for `<TRIAL_DIR>/config/herdr/herdr-client.sock`; the
-script refuses a longer one.
+`TRIAL_DIR` defaults to `${XDG_CACHE_HOME:-$HOME/.cache}/herdr-annotate-trial`, and a relative
+one is made absolute. It has to be short enough for a Unix socket path: at most 103 bytes for
+`<TRIAL_DIR>/config/herdr/herdr-client.sock` (macOS; Linux allows 107); the script refuses a
+longer one.

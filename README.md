@@ -253,20 +253,24 @@ description = "review documents here, with Approve"
 plannotator-tui can review through the Plannotator Inbox, the local server that keeps threads
 between you and your agents. It is off unless plannotator-tui's own config turns it on
 (`[inbox] enabled = true` in `~/.config/plannotator-tui/config.toml`); off, nothing below changes.
+It needs a plannotator-tui with Inbox support, the
+[fork's `feat/inbox`](https://github.com/Flamintus/plannotator-tui/tree/feat/inbox#plannotator-inbox),
+installed with `PLANNOTATOR_TUI_BIN` or `PLANNOTATOR_TUI_RELEASE_BASE` (see Development): the
+pinned 0.9.9 rejects an `[inbox]` table, and every review then stops on its config.
 
 On, `annotate.last` goes through the Inbox with no change to this plugin: the reply you open is
 deposited in its session's review thread, your comments are kept on that thread, `E` sends them
 now and `F` finishes the round, and the agent's answers come back under each passage. Only a
-session the Inbox knows by the id its host reported goes there (for Claude Code, a session started
-after `herdr integration install claude`); any other, or an Inbox that does not serve terminals,
-keeps today's review sent to the agent's pane, and the footer says why. See plannotator-tui's
-[Inbox section](https://github.com/Flamintus/plannotator-tui/tree/feat/inbox#plannotator-inbox)
-for the keys.
+session the Inbox lists live, found by the id its host reported, goes there (for Claude Code, a
+session started after `herdr integration install claude`); any other, or an Inbox that does not
+serve terminals, keeps today's review sent to the agent's pane, and the footer says why. The keys
+are in plannotator-tui's Inbox section.
 
 `annotate.inbox` opens the focused agent's Inbox thread in plannotator-tui, to go on with the
 review kept there. It runs plannotator-tui's `herdr inbox` launcher, which no plannotator-tui
-release has yet: until one does, the action stops with plannotator-tui's usage message. It has no
-default key; `prefix+i` is free in Herdr's defaults:
+build has yet: until one does, the action fails without a word on screen, and
+`herdr plugin log list --plugin annotate` shows plannotator-tui's usage message. It has no default
+key; `prefix+i` is free in Herdr's defaults:
 
 ```toml
 [[keys.command]]
@@ -385,9 +389,10 @@ PLANNOTATOR_TUI_RELEASE_BASE=https://github.com/<owner>/plannotator-tui/releases
   herdr plugin install <owner>/herdr-annotate
 ```
 
-Every install and update runs the build step afresh, so the variable has to be set each time;
-without it the pinned upstream release comes back. The stamp still records the pin from
-`plannotator-tui.version`, whichever release directory the binary came from.
+Every install, and every update that brings a new commit, runs the build step afresh, so the
+variable has to be set each time; without it the pinned upstream release comes back. An update
+with no new commit builds nothing: reinstall to switch release directories. The stamp still
+records the pin from `plannotator-tui.version`, whichever release directory the binary came from.
 
 To try the Inbox review without touching the Herdr you work in, `scripts/try-isolated.sh` runs
 this checkout in a Herdr instance of its own; [docs/try-isolated.md](docs/try-isolated.md) walks

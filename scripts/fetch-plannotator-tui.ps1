@@ -157,7 +157,8 @@ try {
     "PLANNOTATOR_TUI_RELEASE_BASE",
     "Process"
   )
-  # PLANNOTATOR_TUI_RELEASE_BASE is a test-only seam for a loopback fixture server. An empty
+  # PLANNOTATOR_TUI_RELEASE_BASE names another release directory: a fork's release, or a
+  # loopback fixture server in the tests, as for fetch-plannotator-tui.sh. An empty
   # value counts as absent: a caller clearing it through an API that binds $null as "" would
   # otherwise leave the name defined, and an empty base builds a URL with no host at all --
   # which surfaces as "invalid URI" long after the mistake, through the warn-and-exit-zero
