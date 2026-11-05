@@ -11,6 +11,11 @@
 #   2. PLANNOTATOR_TUI_BIN=/path/to/binary is set      -> copy it (local testing, no download)
 #   3. otherwise download the release asset for this platform and verify its sha256
 #
+# PLANNOTATOR_TUI_RELEASE_BASE=<url> downloads from that release directory instead of
+# plannotator/plannotator-tui's v<pin> (a fork's release, a loopback test server); the asset and
+# SHA256SUMS are both read from it. It means what it means to fetch-plannotator-tui.ps1, and
+# like it, it does not undo mode 1: the stamp records the pin, not where the binary came from.
+#
 # A failed download never fails the plugin install: the TypeScript tools keep working and the
 # review actions explain what to do. Only a bad PLANNOTATOR_TUI_BIN is an error.
 set -euo pipefail
@@ -53,7 +58,10 @@ case "$(uname -s)/$(uname -m)" in
 esac
 
 asset="plannotator-tui-$target"
-base="https://github.com/plannotator/plannotator-tui/releases/download/v$version"
+# Blank counts as absent, as it does in fetch-plannotator-tui.ps1.
+release_base="$(printf '%s' "${PLANNOTATOR_TUI_RELEASE_BASE:-}" | tr -d '[:space:]')"
+base="${release_base:-https://github.com/plannotator/plannotator-tui/releases/download/v$version}"
+base="${base%/}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 

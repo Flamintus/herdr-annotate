@@ -103,3 +103,21 @@ case "$output" in
   *) echo "a runnable reinstalled binary did not short-circuit: $output" >&2; exit 1 ;;
 esac
 test ! -s "$curl_log"
+
+# PLANNOTATOR_TUI_RELEASE_BASE names another release directory, a fork's for instance: the asset
+# and its checksums both come from it, and the pin is still what the stamp records.
+fork_base="https://github.com/example/plannotator-tui/releases/download/v$version-fork"
+rm -f "$plugin_root/bin/plannotator-tui.exe" "$plugin_root/bin/plannotator-tui.version"
+(export PLANNOTATOR_TUI_RELEASE_BASE="$fork_base/"; fetch_offline) >/dev/null
+cmp "$release_binary" "$plugin_root/bin/plannotator-tui.exe"
+test "$(cat "$plugin_root/bin/plannotator-tui.version")" = "$version"
+grep -qx "$fork_base/SHA256SUMS" "$curl_log"
+test "$(grep -c -F "$fork_base/plannotator-tui-" "$curl_log")" = 1
+if grep -q -F "github.com/plannotator/" "$curl_log"; then
+  echo "a release base still reached the default release: $(cat "$curl_log")" >&2; exit 1
+fi
+
+# A blank base is no base, as in fetch-plannotator-tui.ps1.
+rm -f "$plugin_root/bin/plannotator-tui.exe" "$plugin_root/bin/plannotator-tui.version"
+(export PLANNOTATOR_TUI_RELEASE_BASE="  "; fetch_offline) >/dev/null
+grep -qx "https://github.com/plannotator/plannotator-tui/releases/download/v$version/SHA256SUMS" "$curl_log"

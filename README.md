@@ -349,6 +349,18 @@ that guards Lite.
 To test a local plannotator-tui build instead of the pinned release, put it in `bin/`
 before linking: `PLANNOTATOR_TUI_BIN=/path/to/plannotator-tui bash scripts/fetch-plannotator-tui.sh`.
 
+To install a plannotator-tui release published elsewhere, a fork's for instance, point
+`PLANNOTATOR_TUI_RELEASE_BASE` at the release directory that holds its assets and `SHA256SUMS`:
+
+```sh
+PLANNOTATOR_TUI_RELEASE_BASE=https://github.com/<owner>/plannotator-tui/releases/download/<tag> \
+  herdr plugin install <owner>/herdr-annotate
+```
+
+Every install and update runs the build step afresh, so the variable has to be set each time;
+without it the pinned upstream release comes back. The stamp still records the pin from
+`plannotator-tui.version`, whichever release directory the binary came from.
+
 Before a release, `HERDR_SESSION=<disposable session> bash scripts/smoke.sh` installs fresh, upgrades
 from the first shipped commit, installs lite, swaps to full, and opens the manager and review panes,
 then restores whatever was installed.
