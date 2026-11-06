@@ -68,10 +68,10 @@ the Herdr binary your everyday instance runs too.
    kept in the session's review journal as they are made; `E` sends them all, ending the round,
    and pastes into the agent's pane the text the journal composed, each comment under its id
    with how to answer through `plannotator reply`; the pane stays open; the agent's answers come
-   into the boxes under each passage, marked new; `C`, `V`, `s` and `z` reply, resolve or open
-   again, send a draft now and fold; a passage selected in a box's words takes a sub-thread; a
-   resolved thread folds to a line starting with `▸`, where `j`/`k` stop and `l` or `Enter` draw
-   it open to read (`▾` at its head, `h` there folds it again); a new `annotate.last` on the same
+   into the boxes under each passage, marked new; `C`, `V`, `s` and `f` reply, resolve or open
+   again, send a draft now and fold or unfold a box; a passage selected in a box's words takes a
+   sub-thread; a resolved thread folds to a line starting with `▸`, where `j`/`k` stop and `f`,
+   `→` or `Enter` draw it open to read (`▾` at its head, `f` or `←` there folds it again); a new `annotate.last` on the same
    session brings the comments and the answers back. The journal can be read from the trial too:
 
    ```sh
