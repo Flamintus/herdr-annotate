@@ -370,6 +370,35 @@ Before a release, `HERDR_SESSION=<disposable session> bash scripts/smoke.sh` ins
 from the first shipped commit, installs lite, swaps to full, and opens the manager and review panes,
 then restores whatever was installed.
 
+### One plannotator-tui build per Claude Code channel (Linux)
+
+`scripts/channel-dispatch.sh` stands in for `bin/plannotator-tui.exe` and runs the plannotator-tui
+build of the Claude Code session in the targeted pane. Every action, the review pane and the Links
+add-on run that file, so the launcher and the review come from the same build. The targeted pane is
+the one plannotator-tui targets itself: the agent pane it was given, else the focused pane, else the
+pane whose output is reviewed. The channel is the `CLAUDE_CHANNEL` that pane's `claude` process was
+launched with, read from `/proc/<pid>/environ`; a pane without `claude`, or a `claude` without the
+variable, is `custom`.
+
+| `CLAUDE_CHANNEL` | build under `~/.local/share/` | `PLANNOTATOR_DATA_DIR` | `PLANNOTATOR_TUI_REVIEW_LOOP` | first on `PATH` |
+|---|---|---|---|---|
+| unset or `custom` | `plannotator-tui-custom/plannotator-tui` | unset | `1` | `~/.local/share/plannotator-custom/bin` |
+| `dev` | `plannotator-tui-dev/plannotator-tui` | `~/.plannotator-dev` | `1` | `~/.local/share/plannotator-dev/bin` |
+| `official` | `plannotator-tui-official/plannotator-tui` | `~/.plannotator-official` | unset | unchanged |
+
+A missing build is an error, shown as a Herdr notification: the dispatcher never falls back to
+another channel. `--version` answers with the custom build. Stage it like a local build, then link:
+
+```sh
+PLANNOTATOR_TUI_BIN="$PWD/scripts/channel-dispatch.sh" bash scripts/fetch-plannotator-tui.sh
+herdr plugin link "$PWD"
+```
+
+The staged file is a copy: stage again after changing the script. A build step (install, update)
+keeps it only while the stamp matches `plannotator-tui.version` and the custom build answers
+`--version`; otherwise the pinned release replaces it. `bash scripts/test-channel-dispatch.sh`
+checks the dispatcher against a fake Herdr.
+
 ## Neovim integration
 
 Add this visual-mode mapping to `~/.config/nvim/lua/config/keymaps.lua` for LazyVim, or to `init.lua`:
